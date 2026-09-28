@@ -27,10 +27,23 @@ O script requer Node.js 20.6 ou superior por usar `--env-file`. A chave `SUPABAS
 
 Configure no servidor, quando as contas estiverem disponíveis:
 
-- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e IDs de preço `STRIPE_PRICE_*`.
+- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `APP_URL` em produção e estes IDs de preços recorrentes ativos:
+	- `STRIPE_PRICE_ESSENCIAL` e `STRIPE_PRICE_ESSENCIAL_ANNUAL`
+	- `STRIPE_PRICE_PRO` e `STRIPE_PRICE_PRO_ANNUAL`
+	- `STRIPE_PRICE_EXPERT` e `STRIPE_PRICE_EXPERT_ANNUAL`
 - Evolution API: `EVOLUTION_API_URL`, `EVOLUTION_API_KEY` e `EVOLUTION_INSTANCE_NAME`.
 
-O schema já reserva `plans`, `subscriptions`, `subscription_changes`, `whatsapp_sessions`, `integration_connections` e `dispatches`. `/api/health` informa quais credenciais estão presentes sem expor seus valores. A comunicação real com Stripe e Evolution requer as chaves, URLs e configuração de webhook da sua conta; não são simuladas pelo modo local.
+### Jornada de compra
+
+1. `/` apresenta a plataforma e leva à página `/planos`.
+2. `/planos` busca os valores e Price IDs recorrentes na API do Stripe.
+3. A seleção do ciclo/plano leva a `/cadastro`, que cria o usuário no Supabase Auth e abre o Checkout Stripe.
+4. Após o pagamento, `/checkout/sucesso` confirma a sessão; o webhook `/api/stripe/webhook` registra a assinatura e ativa o plano no perfil. Renovações e cancelamentos são sincronizados pelos eventos de assinatura.
+5. O cliente retorna a `/login` para entrar no dashboard.
+
+No Stripe Dashboard, crie produtos e preços recorrentes mensais/anuais e copie cada Price ID (`price_...`) para a variável correspondente. A chave `STRIPE_SECRET_KEY` deve ser válida e estar no mesmo modo (teste ou produção) que os Price IDs. Cadastre `https://SEU-DOMINIO/api/stripe/webhook` como endpoint e habilite `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated` e `customer.subscription.deleted`; copie o signing secret (`whsec_...`) para `STRIPE_WEBHOOK_SECRET`. Para testes locais, use o Stripe CLI com `stripe listen --forward-to localhost:3000/api/stripe/webhook` (ajuste a porta conforme o terminal do Next.js) e coloque o `whsec_...` gerado no `.env.local`.
+
+O schema já reserva `plans`, `subscriptions`, `subscription_changes`, `whatsapp_sessions`, `integration_connections` e `dispatches`. `/api/health` informa quais credenciais estão presentes sem expor seus valores. A comunicação real com Stripe e Evolution requer as chaves, URLs, preços e configuração de webhook da sua conta.
 
 ## Verificações
 
