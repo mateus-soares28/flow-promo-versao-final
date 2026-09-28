@@ -1,0 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --background: #f8fafc; --foreground: #0f172a; --accent: #059669; }
+* { box-sizing: border-box; }
+html { min-height: 100%; background: var(--background); }
+body { min-height: 100vh; margin: 0; background: var(--background); color: var(--foreground); font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
+button, input, select { font: inherit; }
