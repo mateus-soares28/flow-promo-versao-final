@@ -49,10 +49,11 @@ export async function getPlanPrice(plan: PlanCode, cycle: BillingCycle) {
 }
 
 export async function getPlanCatalog() {
+  const stripe = getStripeClient();
   return Promise.all(planCatalog.map(async (plan) => {
     const [monthly, annual] = await Promise.all([
-      getPlanPrice(plan.id, "monthly"),
-      getPlanPrice(plan.id, "annual"),
+      retrievePrice(stripe, getPlanPriceId(plan.id, "monthly"), "monthly"),
+      retrievePrice(stripe, getPlanPriceId(plan.id, "annual"), "annual"),
     ]);
     return { ...plan, monthly, annual };
   }));

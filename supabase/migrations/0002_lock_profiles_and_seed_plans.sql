@@ -1,11 +1,6 @@
--- Keep billing-managed profile fields writable only by trusted server clients.
--- The application does not need direct client-side profile updates today.
 drop policy if exists profiles_self_update on public.profiles;
 revoke update on table public.profiles from anon, authenticated;
 
--- Subscription rows reference these plan IDs. Prices remain sourced from Stripe
--- Price objects; the zero values below are placeholders until commercial limits
--- and plan prices are formally set.
 insert into public.plans (
   id,
   name,
