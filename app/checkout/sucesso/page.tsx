@@ -18,7 +18,8 @@ export default async function CheckoutSuccessPage({ searchParams }: SuccessPageP
         await fulfillCheckoutSession(session);
         paymentConfirmed = true;
       }
-    } catch {
+    } catch (error) {
+      console.error("Stripe checkout fulfillment failed", error);
       paymentConfirmed = false;
     }
   }
