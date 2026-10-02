@@ -1,5 +1,6 @@
 "use server";
 
+import { createHmac } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -55,11 +56,24 @@ export async function registerAndCheckout(formData: FormData) {
   const price = await getPlanPrice(plan, cycle);
   if (!stripe || !price) redirect(`${signupUrl}&error=checkout_unavailable`);
 
+  const requestHeaders = headers();
+  const configuredOrigin = process.env.APP_URL?.trim();
+  const requestOrigin = requestHeaders.get("origin");
+  let origin: string;
+  try {
+    origin = new URL(configuredOrigin || requestOrigin || "http://localhost:3000").origin;
+  } catch {
+    redirect(`${signupUrl}&error=checkout_unavailable`);
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: {
+      data: { name },
+      emailRedirectTo: `${origin}/login?confirmed=1`,
+    },
   });
 
   if (error) {
@@ -74,8 +88,6 @@ export async function registerAndCheckout(formData: FormData) {
   if (!data.user) redirect(`${signupUrl}&error=signup_unavailable`);
   if (data.user.identities?.length === 0) redirect(`${signupUrl}&error=account_exists`);
 
-  const requestHeaders = headers();
-  const origin = process.env.APP_URL || requestHeaders.get("origin") || "http://localhost:3000";
   let checkoutUrl: string | null = null;
   let stripeCustomerId: string | null = null;
 
@@ -88,6 +100,9 @@ export async function registerAndCheckout(formData: FormData) {
     stripeCustomerId = customer.id;
     await stripe.customers.createTaxId(customer.id, { type: "br_cpf", value: cpf });
 
+    const cancelPayload = `${data.user.id}.${customer.id}.${Date.now() + 25 * 60 * 60 * 1000}`;
+    const cancelSignature = createHmac("sha256", process.env.STRIPE_SECRET_KEY!).update(cancelPayload).digest("hex");
+
     const checkout = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customer.id,
@@ -96,8 +111,9 @@ export async function registerAndCheckout(formData: FormData) {
       allow_promotion_codes: true,
       metadata: { user_id: data.user.id, plan_id: plan, billing_cycle: cycle },
       subscription_data: { metadata: { user_id: data.user.id, plan_id: plan, billing_cycle: cycle } },
+      expires_at: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
       success_url: `${origin}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/planos?checkout=cancelled`,
+      cancel_url: `${origin}/checkout/cancelado?attempt=${encodeURIComponent(cancelPayload)}&signature=${cancelSignature}`,
     });
     checkoutUrl = checkout.url;
   } catch {

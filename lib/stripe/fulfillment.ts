@@ -23,6 +23,9 @@ export async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
   const stripe = getStripeClient();
   if (!stripe) throw new Error("Stripe is not configured.");
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  if (subscription.status !== "active" && subscription.status !== "trialing") {
+    throw new Error(`Stripe subscription is not active: ${subscription.status}.`);
+  }
   const periodEnd = subscription.items.data[0]?.current_period_end;
   if (!periodEnd) throw new Error("Stripe subscription has no billing period.");
   const endDate = new Date(periodEnd * 1000).toISOString();
@@ -43,13 +46,52 @@ export async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
 
   if (subscriptionError) throw subscriptionError;
 
-  const { error: profileError } = await admin.from("profiles").update({
+  const { data: updatedProfile, error: profileError } = await admin.from("profiles").update({
     plan,
     plan_status: "active",
     expires_at: endDate,
-  }).eq("id", userId);
+  }).eq("id", userId).select("id").maybeSingle();
 
   if (profileError) throw profileError;
+  if (!updatedProfile) throw new Error("Profile was not found while activating the subscription.");
+}
+
+export async function cleanupExpiredCheckout(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.user_id;
+  if (session.payment_status === "paid" || session.payment_status === "no_payment_required") return;
+  if (!userId) throw new Error("Expired Checkout Session is missing its user metadata.");
+
+  const admin = createAdminClient();
+  const [{ data: profile, error: profileError }, { data: subscriptions, error: subscriptionsError }] = await Promise.all([
+    admin.from("profiles").select("role,plan_status").eq("id", userId).maybeSingle(),
+    admin.from("subscriptions").select("id,status").eq("user_id", userId).in("status", ["active", "past_due"]).limit(1),
+  ]);
+  if (profileError) throw profileError;
+  if (subscriptionsError) throw subscriptionsError;
+  if (profile?.role === "admin" || profile?.plan_status === "active" || subscriptions?.length) return;
+
+  const stripe = getStripeClient();
+  const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+  if (stripe && customerId) {
+    const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+    if (subscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      if (["active", "trialing", "past_due"].includes(subscription.status)) return;
+      if (subscription.status !== "canceled" && subscription.status !== "incomplete_expired") {
+        await stripe.subscriptions.cancel(subscriptionId);
+      }
+    }
+
+    try {
+      await stripe.customers.del(customerId);
+    } catch (error) {
+      const stripeError = error as { code?: string };
+      if (stripeError.code !== "resource_missing") throw error;
+    }
+  }
+
+  const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
+  if (deleteError && deleteError.status !== 404) throw deleteError;
 }
 
 export async function syncSubscription(subscription: Stripe.Subscription) {
@@ -85,10 +127,11 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
   }, { onConflict: "stripe_subscription_id" });
   if (subscriptionError) throw subscriptionError;
 
-  const { error: profileError } = await admin.from("profiles").update({
+  const { data: updatedProfile, error: profileError } = await admin.from("profiles").update({
     plan: status === "cancelled" ? "none" : plan,
-    plan_status: status === "cancelled" ? "cancelled" : status === "pending" ? "trial" : "active",
+    plan_status: status === "cancelled" ? "cancelled" : status === "past_due" ? "expired" : status === "pending" ? "trial" : "active",
     expires_at: status === "cancelled" ? null : endDate,
-  }).eq("id", userId);
+  }).eq("id", userId).select("id").maybeSingle();
   if (profileError) throw profileError;
+  if (!updatedProfile) throw new Error("Profile was not found while syncing the subscription.");
 }

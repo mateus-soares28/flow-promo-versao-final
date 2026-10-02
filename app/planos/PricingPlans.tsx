@@ -19,12 +19,13 @@ function formatPrice(price: NonNullable<Plan[BillingCycle]>) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: price.currency.toUpperCase() }).format(price.amount / 100);
 }
 
-export default function PricingPlans({ plans, checkoutCancelled }: { plans: Plan[]; checkoutCancelled: boolean }) {
+export default function PricingPlans({ plans, checkoutCancelled, subscriptionRequired }: { plans: Plan[]; checkoutCancelled: boolean; subscriptionRequired: boolean }) {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const anyPriceAvailable = plans.some((plan) => plan.monthly || plan.annual);
 
   return <>
     {checkoutCancelled && <div role="status" className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">A compra foi cancelada. Seus dados não foram cobrados.</div>}
+    {subscriptionRequired && <div role="status" className="mb-6 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-800">Confirme seu e-mail e conclua uma assinatura ativa para liberar o acesso à plataforma.</div>}
     {!anyPriceAvailable && <div role="status" className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">Os preços ainda não estão disponíveis. Confira a chave Stripe e os Price IDs recorrentes neste ambiente; na Vercel, salve as variáveis do ambiente de deploy e publique uma nova versão.</div>}
     <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end">
       <div><h2 className="text-sm font-extrabold">Planos FlowPromos</h2><p className="mt-1 text-xs text-slate-500">Escolha o ciclo de cobrança para comparar os valores.</p></div>

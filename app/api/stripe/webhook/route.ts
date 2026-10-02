@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { fulfillCheckoutSession, syncSubscription } from "@/lib/stripe/fulfillment";
+import { cleanupExpiredCheckout, fulfillCheckoutSession, syncSubscription } from "@/lib/stripe/fulfillment";
 import { getStripeClient } from "@/lib/stripe/server";
 
 export async function POST(request: NextRequest) {
@@ -25,10 +25,18 @@ export async function POST(request: NextRequest) {
       if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
         await fulfillCheckoutSession(session);
       }
+    } else if (event.type === "checkout.session.expired" || event.type === "checkout.session.async_payment_failed") {
+      await cleanupExpiredCheckout(event.data.object as Stripe.Checkout.Session);
     } else if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
       await syncSubscription(event.data.object as Stripe.Subscription);
+    } else if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subscriptionReference = invoice.parent?.subscription_details?.subscription;
+      const subscriptionId = typeof subscriptionReference === "string" ? subscriptionReference : subscriptionReference?.id;
+      if (subscriptionId) await syncSubscription(await stripe.subscriptions.retrieve(subscriptionId));
     }
-  } catch {
+  } catch (error) {
+    console.error("Stripe webhook processing failed", { eventId: event.id, eventType: event.type, error });
     return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
   }
 

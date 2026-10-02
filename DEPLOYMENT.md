@@ -7,6 +7,8 @@
 3. Migração 0002 remove atualização direta de perfis por usuários autenticados e cria os três IDs de plano usados pelo checkout.
 4. Valores e limites comerciais em `plans` ficam como zero provisório; defina-os antes de implementar cobrança por limite. Preços exibidos no checkout vêm dos Price IDs Stripe.
 5. Confirme `Site URL` e `Redirect URLs` em Authentication → URL Configuration. Inclua domínio de produção e URLs de preview necessárias.
+6. Em Authentication → Providers → Email, mantenha confirmação de e-mail habilitada. Páginas e ações da plataforma bloqueiam usuários sem e-mail confirmado e plano ativo.
+7. Em Authentication → Emails → SMTP Settings, configure SMTP e permita `APP_URL/login?confirmed=1` como destino de confirmação. Para produção, prefira remetente em domínio próprio autenticado.
 
 ## 2. Vercel
 
@@ -24,7 +26,18 @@ Use chaves Stripe de teste no Preview e de produção no Production. Depois de a
 
 ## 3. Stripe
 
-Veja passo a passo de cadastro de produtos, preços e webhook abaixo. O endpoint de produção é `https://SEU-DOMINIO/api/stripe/webhook`.
+Veja passo a passo de cadastro de produtos, preços e webhook abaixo. O endpoint de produção é `https://SEU-DOMINIO/api/stripe/webhook`. Habilite estes eventos para esse endpoint:
+
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
+- `checkout.session.expired`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.paid`
+- `invoice.payment_failed`
+
+Use `STRIPE_WEBHOOK_SECRET` do endpoint em modo Live. O webhook ativa/atualiza o plano; a página de retorno reconcilia a sessão e mostra estado pendente até confirmação. Checkout cancelado é expirado e conta sem assinatura é removida. Checkout abandonado é limpo quando Stripe envia `checkout.session.expired`.
 
 IDs de preço exigidos:
 

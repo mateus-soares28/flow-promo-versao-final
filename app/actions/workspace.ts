@@ -2,11 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { hasActivePlan } from "@/lib/access";
 
 async function getUserAndClient() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  if (!user.email_confirmed_at) redirect("/login?error=email_not_confirmed");
+  const { data: profile } = await supabase.from("profiles").select("role,plan_status,expires_at").eq("id", user.id).maybeSingle();
+  if (!hasActivePlan(profile)) redirect("/planos?access=subscription_required");
   return { supabase, user };
 }
 

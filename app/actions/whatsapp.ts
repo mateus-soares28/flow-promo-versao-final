@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { hasActivePlan } from "@/lib/access";
 import {
   connectEvolutionInstance,
   createEvolutionInstance,
@@ -23,6 +24,9 @@ async function getCurrentUserAndSession() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Entre na sua conta para conectar o WhatsApp." } as const;
+  if (!user.email_confirmed_at) return { error: "Confirme seu e-mail antes de usar a plataforma." } as const;
+  const { data: profile } = await supabase.from("profiles").select("role,plan_status,expires_at").eq("id", user.id).maybeSingle();
+  if (!hasActivePlan(profile)) return { error: "Assine um plano ativo para usar a plataforma." } as const;
   const { data: session, error } = await supabase
     .from("whatsapp_sessions")
     .select("id,session_name,status,phone,qr_code_url")
