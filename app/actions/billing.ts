@@ -5,11 +5,15 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { getPlanPrice, getStripeClient, type BillingCycle, type PlanCode } from "@/lib/stripe/server";
+import { getPlanPrice, getStripeClient, type BillingCycle, type CheckoutPlanCode, type PlanCode } from "@/lib/stripe/server";
 import { isValidCpf, isValidEmail, normalizeCpf } from "@/lib/validation/signup";
 
 function isPlanCode(value: string): value is PlanCode {
   return value === "essencial" || value === "pro" || value === "expert";
+}
+
+function isCheckoutPlanCode(value: string): value is CheckoutPlanCode {
+  return isPlanCode(value) || value === "teste";
 }
 
 function isBillingCycle(value: string): value is BillingCycle {
@@ -42,11 +46,11 @@ export async function registerAndCheckout(formData: FormData) {
   const plan = String(formData.get("plan") || "");
   const cycle = String(formData.get("cycle") || "");
   const query = new URLSearchParams();
-  if (isPlanCode(plan)) query.set("plan", plan);
+  if (isCheckoutPlanCode(plan)) query.set("plan", plan);
   if (isBillingCycle(cycle)) query.set("cycle", cycle);
   const signupUrl = `/cadastro?${query.toString()}`;
 
-  if (!name || !email || !cpf || !password || !isPlanCode(plan) || !isBillingCycle(cycle)) redirect(`${signupUrl}&error=missing_fields`);
+  if (!name || !email || !cpf || !password || !isCheckoutPlanCode(plan) || !isBillingCycle(cycle)) redirect(`${signupUrl}&error=missing_fields`);
   if (!isValidEmail(email)) redirect(`${signupUrl}&error=invalid_email`);
   if (!isValidCpf(cpf)) redirect(`${signupUrl}&error=invalid_cpf`);
   if (password.length < 12) redirect(`${signupUrl}&error=weak_password`);
@@ -55,6 +59,7 @@ export async function registerAndCheckout(formData: FormData) {
   const stripe = getStripeClient();
   const price = await getPlanPrice(plan, cycle);
   if (!stripe || !price) redirect(`${signupUrl}&error=checkout_unavailable`);
+  const activatedPlan: PlanCode = plan === "teste" ? "essencial" : plan;
 
   const requestHeaders = headers();
   const configuredOrigin = process.env.APP_URL?.trim();
@@ -109,8 +114,8 @@ export async function registerAndCheckout(formData: FormData) {
       client_reference_id: data.user.id,
       line_items: [{ price: price.id, quantity: 1 }],
       allow_promotion_codes: true,
-      metadata: { user_id: data.user.id, plan_id: plan, billing_cycle: cycle },
-      subscription_data: { metadata: { user_id: data.user.id, plan_id: plan, billing_cycle: cycle } },
+      metadata: { user_id: data.user.id, plan_id: activatedPlan, billing_cycle: cycle },
+      subscription_data: { metadata: { user_id: data.user.id, plan_id: activatedPlan, billing_cycle: cycle } },
       expires_at: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
       success_url: `${origin}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout/cancelado?attempt=${encodeURIComponent(cancelPayload)}&signature=${cancelSignature}`,
