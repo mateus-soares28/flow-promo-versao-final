@@ -1,32 +1,362 @@
+﻿import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, MessageCircle, Radio, ShoppingBag, Zap } from "lucide-react";
+import { Suspense } from "react";
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Clock3,
+  Link2,
+  ListChecks,
+  MessageCircle,
+  Send,
+  ShieldCheck,
+  Tag,
+  Users,
+} from "lucide-react";
+import Brand from "@/components/landing/Brand";
+import ProductPreview from "@/components/landing/ProductPreview";
+import HomePlans from "@/components/landing/HomePlans";
+import MobileNavigation from "@/components/landing/MobileNavigation";
+import styles from "./home.module.css";
 
-const setupSteps = [
-  { number: "01", title: "Conecte seu WhatsApp", description: "Vincule uma sessão e escolha onde suas ofertas serão publicadas.", icon: MessageCircle },
-  { number: "02", title: "Organize seus grupos", description: "Separe audiências por nicho, loja ou tipo de promoção.", icon: Radio },
-  { number: "03", title: "Prepare suas ofertas", description: "Revise links, cupons e preços antes de programar os envios.", icon: ShoppingBag },
+export const revalidate = 300;
+
+export const metadata: Metadata = {
+  title: "FlowPromos | Ofertas certas, nos grupos certos",
+  description:
+    "Organize ofertas, cupons e links de afiliado. Conecte seu WhatsApp e programe publicações nos seus grupos com o FlowPromos. Conheça os planos.",
+};
+
+const navigation = [
+  { href: "#como-funciona", label: "Como funciona" },
+  { href: "#planos", label: "Planos" },
+  { href: "#perguntas", label: "Perguntas frequentes" },
+];
+
+const benefits = [
+  {
+    icon: MessageCircle,
+    title: "Seu WhatsApp, organizado",
+    description: "Reúna os grupos da sua operação em um só lugar.",
+  },
+  {
+    icon: Tag,
+    title: "Ofertas prontas para enviar",
+    description: "Organize preços, cupons e seus links de afiliado.",
+  },
+  {
+    icon: Clock3,
+    title: "Mais tempo para crescer",
+    description: "Programe os envios e simplifique sua rotina.",
+  },
+  {
+    icon: Users,
+    title: "Cada oferta no seu grupo",
+    description: "Escolha o público certo para cada publicação.",
+  },
+];
+
+const steps = [
+  {
+    icon: Link2,
+    title: "Conecte seu WhatsApp",
+    description:
+      "Vincule sua conta e prepare o canal de envio das suas ofertas.",
+  },
+  {
+    icon: Users,
+    title: "Organize seus grupos",
+    description: "Separe seus públicos por nicho, loja ou tipo de promoção.",
+  },
+  {
+    icon: Send,
+    title: "Prepare e programe",
+    description: "Revise a oferta, escolha os grupos e defina quando enviar.",
+  },
+];
+
+const questions = [
+  {
+    title: "O que é o FlowPromos?",
+    answer:
+      "É um workspace para afiliados organizarem ofertas, cupons, links e grupos de WhatsApp. Você prepara suas promoções e programa os envios em um só lugar.",
+  },
+  {
+    title: "Como começo a usar?",
+    answer:
+      "Escolha um plano, crie sua conta e conclua o pagamento. Confirme também o seu e-mail para acessar a plataforma. Depois, conecte seu WhatsApp, organize os grupos e prepare sua primeira oferta.",
+  },
+  {
+    title: "Posso usar meus links da Shopee e do Mercado Livre?",
+    answer:
+      "Sim. Você pode cadastrar ofertas dessas lojas com seus próprios links de afiliado, preços e cupons. Revise os dados da promoção antes de publicar e mantenha seu cadastro de afiliado na loja correspondente.",
+  },
+  {
+    title: "Preciso manter meu WhatsApp conectado?",
+    answer:
+      "Sim. Para enviar as publicações programadas, sua sessão do WhatsApp precisa estar conectada. Você pode acompanhar a conexão e os disparos pelo painel.",
+  },
+  {
+    title: "Existe um plano gratuito?",
+    answer:
+      "O acesso à plataforma depende de uma assinatura ativa. Os planos disponíveis são Essencial, Pro e Expert. Na página de planos, você consulta os valores e os ciclos de cobrança disponíveis antes de criar sua conta.",
+  },
+  {
+    title: "Já tenho uma assinatura. Por onde entro?",
+    answer: (
+      <>
+        Use <Link href="/login">Entrar na minha conta</Link> com o e-mail e a
+        senha do cadastro. O acesso é liberado após a confirmação do e-mail e do
+        pagamento.
+      </>
+    ),
+  },
 ];
 
 export default function HomePage() {
-  return <main className="min-h-screen bg-[#f8fafc] text-slate-950">
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" className="flex items-center gap-2.5 text-[17px] font-extrabold text-slate-950"><span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-slate-950 text-white"><Zap className="h-4 w-4 fill-white" /></span>FlowPromos</Link>
-        <div className="flex items-center gap-2"><Link href="/planos" className="hidden rounded-xl px-3 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-950 sm:inline-flex">Ver planos</Link><Link href="/login" className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800">Já sou cliente <ArrowRight className="h-4 w-4" /></Link></div>
-      </div>
-    </header>
-    <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:py-14">
-      <div className="flex flex-col justify-between gap-6 border-b border-slate-200 pb-8 md:flex-row md:items-end">
-        <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600">Workspace de afiliados</p><h1 className="mt-3 max-w-3xl text-3xl font-extrabold leading-tight text-slate-950 sm:text-4xl">Ofertas certas, nos grupos certos.</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Organize promoções de lojas como Shopee e Mercado Livre e prepare a publicação nos seus grupos de WhatsApp.</p></div>
-        <div className="flex shrink-0 flex-wrap gap-2"><Link href="/planos" className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-xs font-bold text-white transition hover:bg-slate-800">Ver planos <ArrowRight className="h-4 w-4" /></Link><Link href="/login" className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition hover:border-slate-400 hover:text-slate-950">Já comprei</Link></div>
-      </div>
-      <section className="grid gap-10 py-9 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] lg:gap-16">
-        <div><div className="flex items-center justify-between"><div><h2 className="text-sm font-extrabold text-slate-950">Seu fluxo de publicação</h2><p className="mt-1 text-xs text-slate-400">Da curadoria ao envio, em um só lugar.</p></div><span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700">Configuração inicial</span></div>
-          <div className="mt-6 divide-y divide-slate-200 border-y border-slate-200">{setupSteps.map(({ number, title, description, icon: Icon }) => <article key={number} className="flex gap-4 py-5"><span className="pt-1 text-[10px] font-bold text-slate-300">{number}</span><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200"><Icon className="h-4 w-4" /></span><div><h3 className="text-sm font-bold text-slate-800">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{description}</p></div><Check className="ml-auto mt-1 h-4 w-4 text-slate-200" /></article>)}</div>
+  return (
+    <div className={styles.page}>
+      <a href="#conteudo" className={styles.skipLink}>
+        Pular para o conteúdo
+      </a>
+      <header className={styles.header}>
+        <div className={`${styles.container} ${styles.headerInner}`}>
+          <Brand />
+          <nav aria-label="Navegação principal" className={styles.desktopNav}>
+            {navigation.map((item) => (
+              <a key={item.href} href={item.href}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <div className={styles.headerActions}>
+            <Link href="/login" className={styles.loginLink}>
+              Entrar
+            </Link>
+            <Link
+              href="/planos"
+              className={`${styles.button} ${styles.primary} ${styles.headerCta}`}
+            >
+              Começar agora <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <MobileNavigation items={navigation} />
+          </div>
         </div>
-        <aside className="self-start rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_28px_rgba(15,23,42,0.035)] sm:p-6"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Comece por aqui</p><h2 className="mt-2 text-lg font-extrabold text-slate-950">Qual é o seu próximo passo?</h2><p className="mt-2 text-xs leading-5 text-slate-500">Quem já assinou entra na conta. Quem está chegando escolhe o plano e cria o acesso junto com a compra.</p><ul className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-xs font-semibold text-slate-600"><li className="flex items-center gap-2.5"><Check className="h-3.5 w-3.5 text-emerald-600" /> Escolha do plano</li><li className="flex items-center gap-2.5"><Check className="h-3.5 w-3.5 text-emerald-600" /> Cadastro de acesso</li><li className="flex items-center gap-2.5"><Check className="h-3.5 w-3.5 text-emerald-600" /> Pagamento no Stripe</li></ul><Link href="/planos" className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-xs font-bold text-white hover:bg-slate-800">Conhecer os planos <ArrowRight className="h-4 w-4" /></Link></aside>
-      </section>
-      <footer className="border-t border-slate-200 pt-5 text-[10px] font-medium text-slate-400">FlowPromos · Operação simples para afiliados</footer>
+      </header>
+      <main id="conteudo" tabIndex={-1}>
+        <section
+          className={`${styles.container} ${styles.hero}`}
+          aria-labelledby="hero-title"
+        >
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow}>
+              <span className={styles.statusDot} /> Workspace de afiliados
+            </p>
+            <h1 id="hero-title">
+              Ofertas certas,
+              <br />
+              nos <span className={styles.underline}>grupos certos.</span>
+            </h1>
+            <p className={styles.heroDescription}>
+              Suas ofertas da Shopee, Mercado Livre e outras lojas, organizadas
+              e programadas para seus grupos de WhatsApp.
+            </p>
+            <p className={styles.heroPromise}>
+              Menos tarefas repetidas. Mais tempo para vender.
+            </p>
+            <div className={styles.heroActions}>
+              <Link
+                href="/planos"
+                className={`${styles.button} ${styles.primary}`}
+              >
+                Começar agora <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <a
+                href="#como-funciona"
+                className={`${styles.button} ${styles.secondary}`}
+              >
+                Conhecer o Flow <ArrowRight size={17} aria-hidden="true" />
+              </a>
+            </div>
+            <ul className={styles.reassurance}>
+              <li>
+                <Check size={15} aria-hidden="true" /> Ofertas em um só lugar
+              </li>
+              <li>
+                <Check size={15} aria-hidden="true" /> Envio programado
+              </li>
+              <li>
+                <Check size={15} aria-hidden="true" /> Seus links de afiliado
+              </li>
+            </ul>
+          </div>
+          <ProductPreview />
+        </section>
+        <section
+          aria-label="Vantagens do FlowPromos"
+          className={`${styles.container} ${styles.benefits}`}
+        >
+          {benefits.map(({ icon: Icon, title, description }) => (
+            <article className={styles.benefit} key={title}>
+              <span className={styles.benefitIcon}>
+                <Icon size={23} strokeWidth={1.7} aria-hidden="true" />
+              </span>
+              <div>
+                <h2>{title}</h2>
+                <p>{description}</p>
+              </div>
+            </article>
+          ))}
+        </section>
+        <section
+          id="como-funciona"
+          tabIndex={-1}
+          className={styles.howSection}
+          aria-labelledby="how-title"
+        >
+          <div className={`${styles.container} ${styles.howGrid}`}>
+            <div className={styles.sectionIntro}>
+              <p className={styles.eyebrow}>Como funciona</p>
+              <h2 id="how-title">
+                Sua rotina de ofertas.
+                <br /> <span className={styles.underline}>Em três passos.</span>
+              </h2>
+              <p>
+                Da curadoria ao envio, em um só lugar. Você escolhe as ofertas.
+                O Flow organiza o caminho.
+              </p>
+            </div>
+            {steps.map(({ icon: Icon, title, description }, index) => (
+              <article key={title} className={styles.step}>
+                <div className={styles.stepTop}>
+                  <span className={styles.stepIcon}>
+                    <Icon size={24} strokeWidth={1.7} aria-hidden="true" />
+                  </span>
+                  <span className={styles.stepNumber}>0{index + 1}</span>
+                </div>
+                <h3>{title}</h3>
+                <p>{description}</p>
+                {index < steps.length - 1 && (
+                  <ArrowRight
+                    className={styles.stepArrow}
+                    size={21}
+                    aria-hidden="true"
+                  />
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+        <section
+          id="planos"
+          tabIndex={-1}
+          className={`${styles.container} ${styles.plansSection}`}
+          aria-labelledby="plans-title"
+        >
+          <div className={styles.plansLayout}>
+            <div className={styles.sectionIntro}>
+              <p className={styles.eyebrow}>Seu próximo passo</p>
+              <h2 id="plans-title">
+                Um plano para
+                <br /> o seu momento.
+              </h2>
+              <p>
+                Do primeiro grupo à operação em expansão. Escolha como organizar
+                sua rotina com o Flow.
+              </p>
+              <Link href="/planos" className={styles.textLink}>
+                Comparar planos e ciclos{" "}
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+              <span className={styles.secureNote}>
+                <ShieldCheck size={17} aria-hidden="true" /> Pagamento seguro
+                pelo Stripe
+              </span>
+            </div>
+            <Suspense
+              fallback={
+                <div className={styles.plansLoading} role="status">
+                  Carregando planos…{" "}
+                  <Link href="/planos">
+                    Ver página de planos{" "}
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </Link>
+                </div>
+              }
+            >
+              <HomePlans />
+            </Suspense>
+          </div>
+          <div className={styles.included}>
+            <span>
+              <ListChecks size={19} aria-hidden="true" /> Em todos os planos
+            </span>
+            <span>
+              <Check size={15} aria-hidden="true" /> Organização de promoções
+            </span>
+            <span>
+              <Check size={15} aria-hidden="true" /> Cupons e links de afiliado
+            </span>
+            <span>
+              <Check size={15} aria-hidden="true" /> Workspace FlowPromos
+            </span>
+          </div>
+        </section>
+        <section
+          id="perguntas"
+          tabIndex={-1}
+          className={`${styles.container} ${styles.faqSection}`}
+          aria-labelledby="faq-title"
+        >
+          <div className={styles.sectionIntro}>
+            <p className={styles.eyebrow}>Sem complicação</p>
+            <h2 id="faq-title">
+              Antes de começar,
+              <br />
+              tire suas dúvidas.
+            </h2>
+            <p>Entenda como o Flow entra na sua rotina.</p>
+            <Link href="/planos" className={styles.textLink}>
+              Encontrar meu plano <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+          </div>
+          <div className={styles.faqList}>
+            {questions.map(({ title, answer }) => (
+              <details key={title} className={styles.faq}>
+                <summary>
+                  {title}
+                  <ChevronDown size={19} aria-hidden="true" />
+                </summary>
+                <div className={styles.faqAnswer}>{answer}</div>
+              </details>
+            ))}
+          </div>
+        </section>
+        <section
+          className={`${styles.container} ${styles.closing}`}
+          aria-labelledby="closing-title"
+        >
+          <div>
+            <p className={styles.eyebrow}>Sua próxima oferta começa aqui</p>
+            <h2 id="closing-title">Coloque sua operação no Flow.</h2>
+            <p>
+              Organize suas ofertas. Conecte seus grupos. Prepare o próximo
+              envio.
+            </p>
+          </div>
+          <Link href="/planos" className={`${styles.button} ${styles.primary}`}>
+            Escolher meu plano <ArrowRight size={18} aria-hidden="true" />
+          </Link>
+        </section>
+      </main>
+      <footer className={`${styles.container} ${styles.footer}`}>
+        <Brand />
+        <p>FlowPromos · Mais organização para quem vive de ofertas.</p>
+        <Link href="/login">
+          Já sou cliente <ArrowRight size={15} aria-hidden="true" />
+        </Link>
+      </footer>
     </div>
-  </main>;
+  );
 }
