@@ -6,7 +6,7 @@ import { ArrowRight, Check, CircleHelp, CreditCard, Zap } from "lucide-react";
 
 type BillingCycle = "monthly" | "annual";
 type Plan = {
-  id: "essencial" | "pro" | "expert" | "teste";
+  id: "essencial" | "pro" | "expert";
   name: string;
   audience: string;
   monthly: { id: string; amount: number; currency: string } | null;
@@ -34,17 +34,17 @@ export default function PricingPlans({ plans, checkoutCancelled, subscriptionReq
         <button type="button" aria-pressed={cycle === "annual"} onClick={() => setCycle("annual")} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${cycle === "annual" ? "bg-slate-950 text-white" : "text-slate-500 hover:text-slate-950"}`}>Anual</button>
       </div>
     </div>
-    <section className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+    <section className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
       {plans.map((plan) => {
-        const selectedCycle = plan.id === "teste" ? "monthly" : cycle;
+        const selectedCycle = cycle;
         const price = plan[selectedCycle];
         const highlighted = plan.id === "pro";
         const href = `/cadastro?plan=${plan.id}&cycle=${selectedCycle}`;
         return <article key={plan.id} className={`flex min-h-[390px] flex-col rounded-2xl border bg-white p-5 shadow-[0_8px_28px_rgba(15,23,42,0.035)] ${highlighted ? "border-slate-950 ring-1 ring-slate-950" : "border-slate-200"}`}>
           <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-600">{plan.name}</p><h3 className="mt-2 text-lg font-extrabold">{plan.audience}</h3></div>{highlighted && <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Mais escolhido</span>}</div>
-          <div className="mt-6 min-h-[56px]">{price ? <><p className="text-3xl font-extrabold tracking-tight">{formatPrice(price)}</p><p className="mt-1 text-[11px] font-medium text-slate-400">por {selectedCycle === "monthly" ? "mês" : "ano"}</p>{plan.id === "teste" && <p className="mt-2 text-[11px] leading-4 text-amber-700">Renovação mensal automática; cancele após validar.</p>}</> : <><p className="text-lg font-extrabold text-slate-700">Preço indisponível</p><p className="mt-1 text-[11px] text-slate-400">{plan.id === "teste" ? "Configure STRIPE_PRICE_TESTE na Vercel" : "Este ciclo ainda não foi cadastrado"}</p></>}</div>
+          <div className="mt-6 min-h-[56px]">{price ? <><p className="text-3xl font-extrabold tracking-tight">{formatPrice(price)}</p><p className="mt-1 text-[11px] font-medium text-slate-400">por {selectedCycle === "monthly" ? "mês" : "ano"}</p></> : <><p className="text-lg font-extrabold text-slate-700">Preço indisponível</p><p className="mt-1 text-[11px] text-slate-400">Este ciclo ainda não foi cadastrado</p></>}</div>
           <ul className="mt-6 space-y-3 border-t border-slate-100 pt-5">{benefits.map((benefit) => <li key={benefit} className="flex items-start gap-2.5 text-xs leading-5 text-slate-600"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />{benefit}</li>)}</ul>
-          {plan.id === "teste" && !price ? <button type="button" disabled className="mt-auto inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold text-slate-400">Aguardando configuração</button> : <Link href={href} className={`mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold transition ${price ? highlighted ? "bg-slate-950 text-white hover:bg-slate-800" : "border border-slate-200 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-950" : "border border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-400 hover:text-slate-800"}`}>Ver etapa de cadastro <ArrowRight className="h-4 w-4" /></Link>}
+          <Link href={href} className={`mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold transition ${price ? highlighted ? "bg-slate-950 text-white hover:bg-slate-800" : "border border-slate-200 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-950" : "border border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-400 hover:text-slate-800"}`}>Ver etapa de cadastro <ArrowRight className="h-4 w-4" /></Link>
         </article>;
       })}
     </section>

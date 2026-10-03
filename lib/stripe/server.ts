@@ -2,7 +2,7 @@ import Stripe from "stripe";
 
 export type BillingCycle = "monthly" | "annual";
 export type PlanCode = "essencial" | "pro" | "expert";
-export type CheckoutPlanCode = PlanCode | "teste";
+export type CheckoutPlanCode = PlanCode;
 
 export const planCatalog: { id: PlanCode; name: string; audience: string }[] = [
   { id: "essencial", name: "Essencial", audience: "Para começar a organizar sua operação" },
@@ -50,23 +50,8 @@ async function retrievePrice(stripe: Stripe | null, priceId: string | null, cycl
   }
 }
 
-async function retrieveTestPrice(stripe: Stripe | null): Promise<PlanPrice> {
-  const priceId = process.env.STRIPE_PRICE_TESTE?.trim();
-  if (!stripe || !priceId) return null;
-
-  try {
-    const price = await stripe.prices.retrieve(priceId);
-    if (!price.active || price.type !== "recurring" || price.unit_amount !== 100 || price.currency !== "brl") return null;
-    if (price.recurring?.interval !== "month" || price.recurring.interval_count !== 1) return null;
-    return { id: price.id, amount: price.unit_amount, currency: price.currency };
-  } catch {
-    return null;
-  }
-}
-
 export async function getPlanPrice(plan: CheckoutPlanCode, cycle: BillingCycle) {
   const stripe = getStripeClient();
-  if (plan === "teste") return cycle === "monthly" ? retrieveTestPrice(stripe) : null;
   return retrievePrice(stripe, getPlanPriceId(plan, cycle), cycle);
 }
 
@@ -80,12 +65,5 @@ export async function getPlanCatalog() {
     return { ...plan, monthly, annual };
   }));
 
-  if (!process.env.STRIPE_PRICE_TESTE?.trim()) return plans;
-  return [...plans, {
-    id: "teste" as const,
-    name: "Pre\u00e7o teste",
-    audience: "Valida\u00e7\u00e3o tempor\u00e1ria da compra e ativa\u00e7\u00e3o",
-    monthly: await retrieveTestPrice(stripe),
-    annual: null,
-  }];
+  return plans;
 }

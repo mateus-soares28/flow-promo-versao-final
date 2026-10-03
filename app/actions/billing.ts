@@ -13,7 +13,7 @@ function isPlanCode(value: string): value is PlanCode {
 }
 
 function isCheckoutPlanCode(value: string): value is CheckoutPlanCode {
-  return isPlanCode(value) || value === "teste";
+  return isPlanCode(value);
 }
 
 function isBillingCycle(value: string): value is BillingCycle {
@@ -59,7 +59,7 @@ export async function registerAndCheckout(formData: FormData) {
   const stripe = getStripeClient();
   const price = await getPlanPrice(plan, cycle);
   if (!stripe || !price) redirect(`${signupUrl}&error=checkout_unavailable`);
-  const activatedPlan: PlanCode = plan === "teste" ? "essencial" : plan;
+  const activatedPlan: PlanCode = plan;
 
   const requestHeaders = headers();
   const configuredOrigin = process.env.APP_URL?.trim();

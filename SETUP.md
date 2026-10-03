@@ -31,7 +31,6 @@ Configure no servidor, quando as contas estiverem disponíveis:
 	- `STRIPE_PRICE_ESSENCIAL` e `STRIPE_PRICE_ESSENCIAL_ANNUAL`
 	- `STRIPE_PRICE_PRO` e `STRIPE_PRICE_PRO_ANNUAL`
 	- `STRIPE_PRICE_EXPERT` e `STRIPE_PRICE_EXPERT_ANNUAL`
-	- `STRIPE_PRICE_TESTE` opcional: preço recorrente Live de R$ 1,00/mês para validar temporariamente cadastro, pagamento e ativação. O card aparece apenas com essa variável configurada; remova-a depois do teste para ocultá-lo.
 - Evolution API: `EVOLUTION_API_URL`, `EVOLUTION_API_KEY` e `EVOLUTION_INSTANCE_NAME`.
 
 ### Jornada de compra

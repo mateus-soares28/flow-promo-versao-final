@@ -19,7 +19,6 @@ Importe o repositório como projeto Next.js. Configure variáveis em Settings �
 - `SUPABASE_SERVICE_ROLE_KEY` (server-only; nunca prefixar com `NEXT_PUBLIC_`)
 - `APP_URL` (domínio canônico HTTPS, sem barra final)
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e seis variáveis `STRIPE_PRICE_*`
-- `STRIPE_PRICE_TESTE` (opcional): exibe o card temporário quando configurado. Deve apontar para preço recorrente mensal ativo de BRL 1,00; o teste ativa o plano Essencial e renova mensalmente até cancelamento. Remova a variável após validar para ocultar o card.
 - `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`
 - `CRON_SECRET` para proteger processamento da fila
 
