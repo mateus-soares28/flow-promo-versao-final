@@ -7,6 +7,36 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getPlanPrice, getStripeClient, type BillingCycle, type CheckoutPlanCode, type PlanCode } from "@/lib/stripe/server";
 import { isValidCpf, isValidEmail, normalizeCpf } from "@/lib/validation/signup";
+import { hasActivePlan } from "@/lib/access";
+
+export async function openBillingPortal() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !user.email_confirmed_at) redirect("/login");
+  const { data: profile } = await supabase.from("profiles").select("role,plan_status,expires_at").eq("id", user.id).maybeSingle();
+  if (!hasActivePlan(profile)) redirect("/planos?access=subscription_required");
+  const { data: subscription } = await supabase.from("subscriptions").select("stripe_customer_id").eq("user_id", user.id).not("stripe_customer_id", "is", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const stripe = getStripeClient();
+  if (!stripe || !subscription?.stripe_customer_id) redirect("/dashboard/faturamento?error=portal");
+
+  const origin = process.env.APP_URL?.trim() || headers().get("origin") || "http://localhost:3000";
+  let returnUrl: string;
+  try {
+    const parsed = new URL(origin);
+    if (parsed.protocol !== "https:" && parsed.hostname !== "localhost") throw new Error("Invalid return URL");
+    returnUrl = `${parsed.origin}/dashboard/faturamento`;
+  } catch {
+    redirect("/dashboard/faturamento?error=portal");
+  }
+
+  try {
+    const portal = await stripe.billingPortal.sessions.create({ customer: subscription.stripe_customer_id, return_url: returnUrl });
+    redirect(portal.url);
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    redirect("/dashboard/faturamento?error=portal");
+  }
+}
 
 function isPlanCode(value: string): value is PlanCode {
   return value === "essencial" || value === "pro" || value === "expert";

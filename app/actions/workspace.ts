@@ -1,5 +1,6 @@
 "use server";
 
+import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasActivePlan } from "@/lib/access";
@@ -106,6 +107,120 @@ export async function createGroup(formData: FormData) {
   redirect("/dashboard/grupos?created=1");
 }
 
+const validStores = new Set(["all", "shopee", "amazon", "magalu", "mercadolivre", "aliexpress"]);
+
+export async function createSegment(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const name = String(formData.get("name") || "").trim();
+  const store = String(formData.get("store") || "all");
+  const keywords = String(formData.get("keywords") || "").trim();
+  const minDiscount = Number(formData.get("min_discount") || 15);
+  const minScore = Number(formData.get("min_score") || 60);
+
+  if (!name || name.length > 80 || !keywords || keywords.length > 500 || !validStores.has(store)
+    || !Number.isInteger(minDiscount) || minDiscount < 0 || minDiscount > 100
+    || !Number.isInteger(minScore) || minScore < 0 || minScore > 100) {
+    redirect("/dashboard/segmentos?error=invalid");
+  }
+
+  const { error } = await supabase.from("segments").insert({
+    user_id: user.id, name, store, keywords,
+    min_discount_percentage: minDiscount,
+    min_quality_score: minScore,
+  });
+  if (error) redirect("/dashboard/segmentos?error=save");
+  redirect("/dashboard/segmentos?created=1");
+}
+
+export async function toggleSegment(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const id = Number(formData.get("id"));
+  const isActive = formData.get("is_active") === "true";
+  if (!Number.isSafeInteger(id) || id <= 0) redirect("/dashboard/segmentos?error=invalid");
+  const { error } = await supabase.from("segments").update({ is_active: !isActive }).eq("id", id).eq("user_id", user.id);
+  if (error) redirect("/dashboard/segmentos?error=save");
+  redirect("/dashboard/segmentos?updated=1");
+}
+
+export async function deleteSegment(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const id = Number(formData.get("id"));
+  if (!Number.isSafeInteger(id) || id <= 0) redirect("/dashboard/segmentos?error=invalid");
+  const { error } = await supabase.from("segments").delete().eq("id", id).eq("user_id", user.id);
+  if (error) redirect("/dashboard/segmentos?error=delete");
+  redirect("/dashboard/segmentos?deleted=1");
+}
+
+export async function saveMessageTemplate(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const title = String(formData.get("title") || "").trim();
+  const message = String(formData.get("message") || "").trim();
+  if (!title || title.length > 100 || !message || message.length > 4000) {
+    redirect("/dashboard/mensagens?error=invalid");
+  }
+  const { error } = await supabase.from("message_templates").insert({ user_id: user.id, title, message });
+  if (error) redirect("/dashboard/mensagens?error=save");
+  redirect("/dashboard/mensagens?saved=1");
+}
+
+export async function deleteMessageTemplate(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const id = Number(formData.get("id"));
+  if (!Number.isSafeInteger(id) || id <= 0) redirect("/dashboard/mensagens?error=delete");
+  const { error } = await supabase.from("message_templates").delete().eq("id", id).eq("user_id", user.id);
+  if (error) redirect("/dashboard/mensagens?error=delete");
+  redirect("/dashboard/mensagens?deleted=1");
+}
+
+const integrationFields = {
+  shopee: ["tracking_id", "partner_id", "api_key", "api_secret"],
+  amazon: ["tracking_id", "store_id", "api_key", "api_secret"],
+  mercadolivre: ["tracking_id", "app_id", "api_key", "api_secret"],
+} as const;
+
+function encryptCredentials(value: Record<string, string>) {
+  const secret = process.env.INTEGRATION_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) throw new Error("Defina INTEGRATION_ENCRYPTION_KEY no servidor.");
+  const key = createHash("sha256").update(secret).digest();
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const ciphertext = Buffer.concat([cipher.update(JSON.stringify(value), "utf8"), cipher.final()]);
+  return `v1:${iv.toString("hex")}:${cipher.getAuthTag().toString("hex")}:${ciphertext.toString("hex")}`;
+}
+
+export async function saveIntegrationCredentials(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const provider = String(formData.get("provider") || "");
+  if (!(provider in integrationFields)) redirect("/dashboard/integracoes?error=invalid");
+  const fields = integrationFields[provider as keyof typeof integrationFields];
+  const credentials = Object.fromEntries(fields.map((key) => [key, String(formData.get(key) || "").trim()]));
+  if (!credentials.tracking_id || !credentials.api_key || !credentials.api_secret) redirect("/dashboard/integracoes?error=invalid");
+  let encryptedCredentials: string;
+  try {
+    encryptedCredentials = encryptCredentials(credentials);
+  } catch {
+    redirect("/dashboard/integracoes?error=config");
+  }
+  const { error } = await supabase.from("integration_connections").upsert({
+    user_id: user.id,
+    provider,
+    encrypted_credentials: encryptedCredentials,
+    status: "disconnected",
+    last_error: null,
+  }, { onConflict: "user_id,provider" });
+  if (error) redirect("/dashboard/integracoes?error=save");
+  redirect("/dashboard/integracoes?saved=1");
+}
+
+export async function removeIntegrationCredentials(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const provider = String(formData.get("provider") || "");
+  if (!(provider in integrationFields)) redirect("/dashboard/integracoes?error=invalid");
+  const { error } = await supabase.from("integration_connections").delete().eq("user_id", user.id).eq("provider", provider);
+  if (error) redirect("/dashboard/integracoes?error=delete");
+  redirect("/dashboard/integracoes?deleted=1");
+}
+
 export async function deleteGroup(formData: FormData) {
   const { supabase, user } = await getUserAndClient();
   const id = Number(formData.get("id"));
@@ -149,4 +264,17 @@ export async function scheduleDispatch(formData: FormData) {
   });
   if (error) redirect(`/dashboard/disparos/novo?offer=${offerId}&error=dispatch`);
   redirect("/dashboard/disparos?scheduled=1");
+}
+
+export async function retryDispatch(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const id = Number(formData.get("id"));
+  if (!Number.isSafeInteger(id) || id <= 0) redirect("/dashboard/disparos?error=retry");
+  const { error } = await supabase.from("dispatches").update({
+    status: "pending",
+    error_message: null,
+    scheduled_for: new Date().toISOString(),
+  }).eq("id", id).eq("user_id", user.id).eq("status", "failed");
+  if (error) redirect("/dashboard/disparos?error=retry");
+  redirect("/dashboard/disparos?retried=1");
 }

@@ -59,6 +59,10 @@ Esta configuração é local. Um FlowPromos hospedado na Vercel precisa de uma E
 
 Referência: [repositório oficial da Evolution API](https://github.com/evolution-foundation/evolution-api).
 
+### Migração dos templates de mensagens
+
+Antes de usar /dashboard/mensagens, execute supabase/migrations/0003_workspace_templates.sql no SQL Editor do Supabase. Essa migração cria a tabela de templates com acesso restrito ao dono da conta.
+
 ### Jornada de compra
 
 1. `/` apresenta a plataforma e leva à página `/planos`.

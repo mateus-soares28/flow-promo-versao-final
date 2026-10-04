@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -75,6 +73,15 @@ button, input, select { font: inherit; }
 .whatsapp-dialog img { max-width: 100%; height: auto; background: white; }
 .overview-page { animation: dashboard-enter 220ms ease-out; }
 @keyframes dashboard-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.dashboard-skeleton { background: linear-gradient(100deg, #eef2f7 20%, #f8fafc 40%, #eef2f7 60%); background-size: 220% 100%; animation: dashboard-skeleton 1.2s ease-in-out infinite; }
+@keyframes dashboard-skeleton { to { background-position-x: -220%; } }
 @media (prefers-reduced-motion: reduce) {
   .dashboard-theme *, .dashboard-theme *::before, .dashboard-theme *::after { animation: none !important; transition: none !important; }
+}
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
