@@ -4,6 +4,7 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasActivePlan } from "@/lib/access";
+import { parseDispatchSchedule } from "@/lib/validation/dispatch";
 
 async function getUserAndClient() {
   const supabase = await createClient();
@@ -234,11 +235,11 @@ export async function scheduleDispatch(formData: FormData) {
   const { supabase, user } = await getUserAndClient();
   const offerId = Number(formData.get("offer_id"));
   const groupId = Number(formData.get("group_id"));
-  if (!Number.isSafeInteger(offerId) || !Number.isSafeInteger(groupId)) redirect(`/dashboard/disparos/novo?offer=${offerId}&error=dispatch`);
+  if (!Number.isSafeInteger(offerId) || offerId <= 0 || !Number.isSafeInteger(groupId) || groupId <= 0) redirect(`/dashboard/disparos/novo?offer=${offerId}&error=dispatch`);
 
   const scheduleInput = String(formData.get("scheduled_for") || "");
-  const scheduledFor = scheduleInput ? new Date(`${scheduleInput}:00-03:00`) : new Date();
-  if (Number.isNaN(scheduledFor.getTime())) redirect(`/dashboard/disparos/novo?offer=${offerId}&error=dispatch`);
+  const scheduledFor = parseDispatchSchedule(scheduleInput);
+  if (!scheduledFor) redirect(`/dashboard/disparos/novo?offer=${offerId}&error=dispatch`);
 
   const [{ data: offer }, { data: group }] = await Promise.all([
     supabase.from("offers").select("title,store,promo_price,coupon,affiliate_url").eq("id", offerId).eq("user_id", user.id).single(),

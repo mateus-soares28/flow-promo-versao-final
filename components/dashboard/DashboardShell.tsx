@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import Link from "./NavigationLink";
+import SubmitButton from "./SubmitButton";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -355,9 +356,9 @@ function DashboardContent({
                 <WalletCards size={15} aria-hidden="true" /> Ver faturamento
               </Link>
               <form action={logout}>
-                <button className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-xs font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-700">
+                <SubmitButton pendingText="Saindo…" className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-xs font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-700">
                   <LogOut size={15} aria-hidden="true" /> Sair da conta
-                </button>
+                </SubmitButton>
               </form>
             </div>
           </details>
@@ -425,10 +426,10 @@ function DashboardContent({
               <span>{daysRemaining(profile.expiresAt, profile.planStatus)}</span>
             </Link>
             <form action={logout} className="shrink-0">
-              <button aria-label="Sair da conta" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-2 text-[11px] font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 sm:px-3">
+              <SubmitButton aria-label="Sair da conta" pendingText="Saindo…" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-2 text-[11px] font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 sm:px-3">
                 <LogOut size={15} aria-hidden="true" />
                 <span className="hidden sm:inline">Sair</span>
-              </button>
+              </SubmitButton>
             </form>
           </nav>
         </header>

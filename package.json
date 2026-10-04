@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "node --test scripts/test-dispatch.mjs",
     "admin:create": "node --env-file=.env.local scripts/create-admin.mjs",
     "evolution:setup": "node scripts/setup-evolution.mjs",
     "evolution:up": "docker compose --env-file .env.local -f compose.evolution.yaml up -d --wait --wait-timeout 240",

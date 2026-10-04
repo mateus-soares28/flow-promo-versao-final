@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { refreshWhatsappState } from "@/app/actions/whatsapp";
 
 type Connection = {
   state: string;
@@ -42,6 +41,7 @@ export function WhatsappProvider({
   const busy = useRef(false);
   const revision = useRef(0);
   const mounted = useRef(false);
+  const request = useRef<AbortController | null>(null);
 
   const update = useCallback((value: Connection) => {
     revision.current += 1;
@@ -56,7 +56,15 @@ export function WhatsappProvider({
     const version = revision.current;
     setChecking(true);
     try {
-      const result = await refreshWhatsappState();
+      const controller = new AbortController();
+      request.current = controller;
+      const response = await fetch("/api/whatsapp/status", {
+        method: "POST",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error("Connection refresh failed");
+      const result = await response.json();
       if (!mounted.current || version !== revision.current) return;
       if (result.ok) {
         setConnection({
@@ -83,6 +91,13 @@ export function WhatsappProvider({
   useEffect(() => {
     mounted.current = true;
     void refresh();
+    return () => {
+      mounted.current = false;
+      request.current?.abort();
+    };
+  }, [refresh]);
+
+  useEffect(() => {
     const timer = window.setInterval(
       () => {
         if (document.visibilityState === "visible") void refresh();
@@ -94,7 +109,6 @@ export function WhatsappProvider({
     };
     window.addEventListener("focus", onFocus);
     return () => {
-      mounted.current = false;
       window.clearInterval(timer);
       window.removeEventListener("focus", onFocus);
     };

@@ -2,7 +2,6 @@ import { MessageSquareText, Trash2 } from "lucide-react";
 import { deleteMessageTemplate } from "@/app/actions/workspace";
 import SubmitButton from "@/components/dashboard/SubmitButton";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
-import SubmitButton from "@/components/dashboard/SubmitButton";
 import TemplateEditor from "@/components/dashboard/TemplateEditor";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";

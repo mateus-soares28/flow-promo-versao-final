@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createOffer } from "@/app/actions/workspace";
 import { requireUser } from "@/lib/auth";
+import SubmitButton from "@/components/dashboard/SubmitButton";
 
 export default async function NewOfferPage({ searchParams }: { searchParams: { error?: string } }) {
   await requireUser();
@@ -17,7 +18,7 @@ export default async function NewOfferPage({ searchParams }: { searchParams: { e
       <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Link afiliado<input required type="url" name="affiliate_url" className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm" placeholder="https://" /></label>
       <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Link original (opcional)<input type="url" name="original_url" className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm" placeholder="Se vazio, usa link afiliado" /></label>
       <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Cupom (opcional)<input maxLength={80} name="coupon" className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm" /></label>
-      <div className="flex gap-3 sm:col-span-2"><button className="h-11 flex-1 rounded-xl bg-slate-950 text-xs font-bold text-white hover:bg-slate-800">Salvar promoção</button><Link href="/dashboard" className="inline-flex h-11 items-center rounded-xl border border-slate-200 px-4 text-xs font-bold text-slate-600">Cancelar</Link></div>
+      <div className="flex gap-3 sm:col-span-2"><SubmitButton pendingText="Salvando promoção…" className="h-11 flex-1 bg-slate-950 text-xs text-white hover:bg-slate-800">Salvar promoção</SubmitButton><Link href="/dashboard" className="inline-flex h-11 items-center rounded-xl border border-slate-200 px-4 text-xs font-bold text-slate-600">Cancelar</Link></div>
     </form>
   </div></main>;
 }

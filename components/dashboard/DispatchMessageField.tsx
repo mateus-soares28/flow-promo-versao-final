@@ -18,7 +18,7 @@ function applyOffer(message: string, offer: Offer) {
     "{cupom}": offer.coupon || "",
     "{link}": offer.link,
   };
-  return Object.entries(values).reduce((result, [token, value]) => result.replaceAll(token, value), message);
+  return Object.entries(values).reduce((result, [token, value]) => result.replaceAll(token, () => value), message);
 }
 
 export default function DispatchMessageField({ offer, templates, defaultMessage }: { offer: Offer; templates: Template[]; defaultMessage: string }) {

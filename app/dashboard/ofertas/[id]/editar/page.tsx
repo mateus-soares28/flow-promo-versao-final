@@ -3,6 +3,7 @@ import { deleteOffer, updateOffer } from "@/app/actions/workspace";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import SubmitButton from "@/components/dashboard/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,9 @@ export default async function EditOfferPage({ params, searchParams }: Props) {
       <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Link afiliado<input required type="url" name="affiliate_url" defaultValue={offer.affiliate_url} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm" /></label>
       <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Link original<input type="url" name="original_url" defaultValue={offer.original_url} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm" /></label>
       <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Cupom<input maxLength={80} name="coupon" defaultValue={offer.coupon || ""} className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm" /></label>
-      <button className="h-11 rounded-xl bg-slate-950 text-xs font-bold text-white hover:bg-slate-800">Salvar alterações</button>
+      <SubmitButton pendingText="Salvando alterações…" className="h-11 bg-slate-950 text-xs text-white hover:bg-slate-800">Salvar alterações</SubmitButton>
       <Link href="/dashboard" className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 text-xs font-bold text-slate-600">Cancelar</Link>
     </form>
-    <form action={deleteOffer} className="mt-4"><input type="hidden" name="id" value={offer.id} /><button className="text-xs font-semibold text-rose-600 hover:text-rose-800">Excluir promoção</button></form>
+    <form action={deleteOffer} className="mt-4"><input type="hidden" name="id" value={offer.id} /><SubmitButton pendingText="Excluindo…" className="text-xs text-rose-600 hover:text-rose-800">Excluir promoção</SubmitButton></form>
   </div></main>;
 }

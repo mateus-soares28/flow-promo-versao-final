@@ -1,6 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { hasActivePlan } from "@/lib/access";
 
 export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,6 +13,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   let response = NextResponse.next({ request });
+  // Public pages without a session need no authentication round trip.
+  if (!isProtected && !request.cookies.getAll().some(({ name }) => name.startsWith("sb-") && name.includes("-auth-token"))) {
+    return response;
+  }
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() { return request.cookies.getAll(); },
@@ -25,15 +28,12 @@ export async function updateSession(request: NextRequest) {
     },
   });
   const { data: { user } } = await supabase.auth.getUser();
-  if (isProtected && !user) return NextResponse.redirect(new URL("/login", request.url));
-  if (isProtected && user) {
-    if (!user.email_confirmed_at) return NextResponse.redirect(new URL("/login?error=email_not_confirmed", request.url));
-    const { data: profile } = await supabase.from("profiles").select("role,plan_status,expires_at").eq("id", user.id).maybeSingle();
-    if (pathname.startsWith("/admin")) {
-      if (profile?.role !== "admin") return NextResponse.redirect(new URL("/dashboard", request.url));
-    } else if (!hasActivePlan(profile)) {
-      return NextResponse.redirect(new URL("/planos?access=subscription_required", request.url));
-    }
+  if (isProtected && (!user || !user.email_confirmed_at)) {
+    const destination = user ? "/login?error=email_not_confirmed" : "/login";
+    const redirect = NextResponse.redirect(new URL(destination, request.url));
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
   }
+  // Pages and actions enforce plan/role access in lib/auth; middleware only refreshes cookies.
   return response;
 }

@@ -2,8 +2,18 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import DashboardClient, { type OfferRecord } from "./DashboardClient";
 import Overview from "./Overview";
+import { Suspense } from "react";
+import DashboardLoading from "./loading";
 
-export default async function DashboardPage({ searchParams }: { searchParams: { tab?: string; period?: string } }) {
+type Props = { searchParams: { tab?: string; period?: string } };
+
+export default function DashboardPage({ searchParams }: Props) {
+  return <Suspense key={`${searchParams.tab || "overview"}:${searchParams.period || "weekly"}`} fallback={<DashboardLoading />}>
+    <DashboardContent searchParams={searchParams} />
+  </Suspense>;
+}
+
+async function DashboardContent({ searchParams }: Props) {
   const user = await requireUser();
   if (searchParams.tab !== "promocoes") return <Overview user={user} period={searchParams.period} />;
   const supabase = await createClient();
