@@ -14,7 +14,7 @@ export default async function DispatchesPage({ searchParams }: { searchParams: {
   const { data: groups } = groupIds.length ? await supabase.from("affiliate_groups").select("id,name").in("id", groupIds) : { data: [] };
   const groupNames = new Map((groups || []).map((group) => [group.id, group.name]));
 
-  return <main className="min-h-screen bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8"><div className="mx-auto max-w-5xl">
+  return <main className="min-h-[calc(100vh-68px)] bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8"><div className="mx-auto max-w-5xl">
     <Link href="/dashboard" className="text-xs font-semibold text-slate-500 hover:text-slate-950">← Dashboard</Link>
     <h1 className="mt-5 text-3xl font-extrabold">Fila de disparos</h1><p className="mt-2 text-sm text-slate-500">Acompanhe mensagens agendadas e entregas.</p>
     {searchParams.scheduled && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">Disparo adicionado à fila.</p>}

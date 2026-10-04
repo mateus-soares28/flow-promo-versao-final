@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 
 export default async function NewOfferPage({ searchParams }: { searchParams: { error?: string } }) {
   await requireUser();
-  return <main className="min-h-screen bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8"><div className="mx-auto max-w-3xl">
+  return <main className="min-h-[calc(100vh-68px)] bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8"><div className="mx-auto max-w-3xl">
     <Link href="/dashboard" className="text-xs font-semibold text-slate-500 hover:text-slate-950">← Dashboard</Link>
     <h1 className="mt-5 text-3xl font-extrabold">Nova promoção</h1><p className="mt-2 text-sm text-slate-500">Cadastre oferta manualmente para organizar e agendar.</p>
     {searchParams.error && <p role="alert" className="mt-5 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">Confira título, preços e links. Preço promocional deve ser menor que preço original.</p>}

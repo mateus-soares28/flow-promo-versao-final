@@ -16,7 +16,7 @@ export default async function WhatsappPage() {
     .limit(1)
     .maybeSingle();
 
-  return <main className="min-h-screen bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8">
+  return <main className="min-h-[calc(100vh-68px)] bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8">
     <div className="mx-auto max-w-5xl">
       <Link href="/dashboard" className="text-xs font-semibold text-slate-500 hover:text-slate-950">← Voltar ao dashboard</Link>
       <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em]">Integrações</h1>

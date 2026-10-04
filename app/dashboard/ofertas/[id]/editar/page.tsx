@@ -16,7 +16,7 @@ export default async function EditOfferPage({ params, searchParams }: Props) {
   const { data: offer } = await supabase.from("offers").select("id,title,store,category,original_price,promo_price,coupon,original_url,affiliate_url").eq("id", id).eq("user_id", user.id).single();
   if (!offer) notFound();
 
-  return <main className="min-h-screen bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8"><div className="mx-auto max-w-3xl">
+  return <main className="min-h-[calc(100vh-68px)] bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8"><div className="mx-auto max-w-3xl">
     <Link href="/dashboard" className="text-xs font-semibold text-slate-500 hover:text-slate-950">← Dashboard</Link>
     <h1 className="mt-5 text-3xl font-extrabold">Editar promoção</h1>
     {searchParams.error && <p role="alert" className="mt-5 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">Não foi possível salvar. Revise os dados e tente novamente.</p>}

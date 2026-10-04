@@ -14,7 +14,7 @@ export default async function GroupsPage({ searchParams }: Props) {
   const { data: groups } = await supabase.from("affiliate_groups").select("id,name,group_id,segment,is_active,members_count").eq("user_id", user.id).order("created_at", { ascending: false });
   const error = searchParams.error === "sync" ? "Não foi possível sincronizar. Conecte o WhatsApp e tente novamente." : searchParams.error ? "Não foi possível salvar. Confira nome e ID do grupo (ex.: 120363012345678901@g.us)." : "";
 
-  return <main className="min-h-screen bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8"><div className="mx-auto max-w-5xl">
+  return <main className="min-h-[calc(100vh-68px)] bg-[#f8fafc] px-5 py-8 text-slate-950 sm:px-8"><div className="mx-auto max-w-5xl">
     <Link href="/dashboard" className="text-xs font-semibold text-slate-500 hover:text-slate-950">← Dashboard</Link>
     <h1 className="mt-5 text-3xl font-extrabold">Grupos WhatsApp</h1><p className="mt-2 text-sm text-slate-500">Cadastre grupos para escolher destinos de disparo.</p>
     {searchParams.created && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">Grupo cadastrado.</p>}{searchParams.deleted && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">Grupo removido.</p>}{searchParams.synced !== undefined && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">{searchParams.synced} grupo(s) sincronizado(s).</p>}{error && <p role="alert" className="mt-5 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{error}</p>}
