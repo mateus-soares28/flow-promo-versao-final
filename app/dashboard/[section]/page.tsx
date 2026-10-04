@@ -45,13 +45,13 @@ const sections = {
     title: "Monitoramento",
     description: "Acompanhe suas promoções e a atividade da sua operação.",
     icon: CircleHelp,
-    actions: [{ href: "/dashboard", label: "Ver minhas promoções" }],
+    actions: [{ href: "/dashboard?tab=promocoes", label: "Ver minhas promoções" }],
   },
   cupons: {
     title: "Cupons",
     description: "A área de cupons está sendo preparada para seu workspace.",
     icon: CircleHelp,
-    actions: [{ href: "/dashboard", label: "Ver minhas promoções" }],
+    actions: [{ href: "/dashboard?tab=promocoes", label: "Ver minhas promoções" }],
   },
   mensagens: {
     title: "Mensagens",

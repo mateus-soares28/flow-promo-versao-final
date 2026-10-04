@@ -13,11 +13,12 @@ import {
 
 type ActionResult = { ok: true; state: string; qrCode?: string | null; phone?: string | null } | { ok: false; error: string };
 
-function stateLabel(state: string): "connected" | "connecting" | "disconnected" {
+function stateLabel(state: string): "connected" | "connecting" | "disconnected" | "unknown" {
   const normalized = state.toLowerCase();
   if (["open", "connected", "ready"].includes(normalized)) return "connected";
   if (["connecting", "qrcode", "qr", "starting"].includes(normalized)) return "connecting";
-  return "disconnected";
+  if (["close", "closed", "disconnected"].includes(normalized)) return "disconnected";
+  return "unknown";
 }
 
 async function getCurrentUserAndSession() {
@@ -90,7 +91,11 @@ export async function refreshWhatsappState(): Promise<ActionResult> {
   try {
     const connection = await getEvolutionConnection(context.session.session_name);
     const status = stateLabel(connection.state);
-    const qrCode = connection.qrCode || context.session.qr_code_url;
+    if (status === "unknown") return { ok: false, error: "A conexão retornou um estado desconhecido. Tente verificar novamente." };
+    let qrCode = status === "connecting" ? connection.qrCode || context.session.qr_code_url : null;
+    if (status === "connecting" && !qrCode) {
+      qrCode = (await connectEvolutionInstance(context.session.session_name)).qrCode;
+    }
     const phone = connection.phone || context.session.phone;
     const { error } = await context.supabase.from("whatsapp_sessions").update({
       status,

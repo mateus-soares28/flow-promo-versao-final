@@ -52,7 +52,7 @@ export async function createOffer(formData: FormData) {
     status: "detected",
   });
   if (error) redirect("/dashboard/ofertas/nova?error=save");
-  redirect("/dashboard");
+  redirect("/dashboard?tab=promocoes");
 }
 
 export async function updateOffer(formData: FormData) {
@@ -82,16 +82,16 @@ export async function updateOffer(formData: FormData) {
     affiliate_url: affiliateUrl,
   }).eq("id", id).eq("user_id", user.id);
   if (error) redirect(`/dashboard/ofertas/${id}/editar?error=save`);
-  redirect("/dashboard");
+  redirect("/dashboard?tab=promocoes");
 }
 
 export async function deleteOffer(formData: FormData) {
   const { supabase, user } = await getUserAndClient();
   const id = Number(formData.get("id"));
-  if (!Number.isSafeInteger(id) || id <= 0) redirect("/dashboard?error=delete");
+  if (!Number.isSafeInteger(id) || id <= 0) redirect("/dashboard?tab=promocoes&error=delete");
   const { error } = await supabase.from("offers").delete().eq("id", id).eq("user_id", user.id);
   if (error) redirect(`/dashboard/ofertas/${id}/editar?error=delete`);
-  redirect("/dashboard");
+  redirect("/dashboard?tab=promocoes");
 }
 
 export async function createGroup(formData: FormData) {

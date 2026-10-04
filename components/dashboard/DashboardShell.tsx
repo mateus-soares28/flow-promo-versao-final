@@ -15,6 +15,7 @@ import {
   Menu,
   MessageSquare,
   Moon,
+  Sun,
   PlaySquare,
   Send,
   Settings2,
@@ -27,18 +28,20 @@ import {
   Zap,
 } from "lucide-react";
 import { logout } from "@/app/actions/auth";
+import { WhatsappProvider, useWhatsapp, whatsappLabel } from "./WhatsappProvider";
+import WhatsappConnection from "@/app/dashboard/whatsapp/WhatsappConnection";
 
 type Profile = {
   email?: string;
   role: string;
   plan: string;
   expiresAt: string | null;
+  planStatus: string;
 };
 
 type DashboardShellProps = {
   children: React.ReactNode;
   profile: Profile;
-  whatsappConnected: boolean;
 };
 
 const sections = [
@@ -98,31 +101,59 @@ function isCurrentRoute(
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
-function daysRemaining(expiresAt: string | null) {
+function daysRemaining(expiresAt: string | null, planStatus: string) {
+  if (planStatus !== "active") return "Ver planos";
   if (!expiresAt) return "Plano ativo";
   const remaining = new Date(expiresAt).getTime() - Date.now();
   return `${Math.max(0, Math.ceil(remaining / 86_400_000))} ${Math.ceil(remaining / 86_400_000) === 1 ? "dia" : "dias"} restantes`;
 }
 
-export default function DashboardShell({
+export default function DashboardShell(props: DashboardShellProps) {
+  const [connectionOpen, setConnectionOpen] = useState(false);
+  return <WhatsappProvider openConnection={() => setConnectionOpen(true)}>
+    <DashboardContent {...props} connectionOpen={connectionOpen} closeConnection={() => setConnectionOpen(false)} />
+  </WhatsappProvider>;
+}
+
+function DashboardContent({
   children,
   profile,
-  whatsappConnected,
-}: DashboardShellProps) {
+  connectionOpen,
+  closeConnection,
+}: DashboardShellProps & { connectionOpen: boolean; closeConnection: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [theme, setTheme] = useState("light");
+  const connectionDialog = useRef<HTMLDialogElement>(null);
+  const whatsapp = useWhatsapp();
+  const whatsappConnected = whatsapp.state === "connected";
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
   const previouslyOpen = useRef(false);
   const planLabels: Record<string, string> = {
-    none: "Essencial",
+    none: "Nenhum plano",
     essencial: "Essencial",
     pro: "Pro",
     expert: "Expert",
   };
   const currentPlan = planLabels[profile.plan] || profile.plan;
+
+  useEffect(() => {
+    try { setTheme(localStorage.getItem("flowpromos-theme") === "dark" ? "dark" : "light"); } catch { /* Storage may be disabled. */ }
+  }, []);
+
+  useEffect(() => {
+    if (!connectionOpen) return;
+    const dialog = connectionDialog.current;
+    const previousOverflow = document.body.style.overflow;
+    dialog?.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [connectionOpen]);
 
   useEffect(() => {
     const mobile = window.matchMedia("(max-width: 1023px)");
@@ -176,13 +207,14 @@ export default function DashboardShell({
     setMenuOpen(false);
   }
 
-  function showNotice(message: string) {
-    setNotice(message);
-    window.setTimeout(() => setNotice(""), 3000);
+  function toggleTheme() {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    try { localStorage.setItem("flowpromos-theme", nextTheme); } catch { /* Keep the current theme without persistence. */ }
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-950">
+    <div data-theme={theme} className="dashboard-theme flex min-h-screen bg-[#f8fafc] text-slate-950">
       {menuOpen && (
         <button
           type="button"
@@ -300,7 +332,7 @@ export default function DashboardShell({
                   {profile.email || "Sua conta"}
                 </span>
                 <span className="mt-0.5 block text-[10px] capitalize text-slate-500">
-                  Plano {currentPlan}
+                  {profile.plan === "none" ? currentPlan : `Plano ${currentPlan}`}
                 </span>
               </span>
               <span className="text-slate-500 transition-transform group-open:rotate-180">
@@ -357,31 +389,31 @@ export default function DashboardShell({
 
           <nav
             aria-label="Status e ações da conta"
-            className="flex min-h-10 w-full items-center justify-between gap-2 lg:w-auto lg:justify-end"
+            className="flex min-h-10 w-full flex-wrap items-center justify-between gap-2 lg:w-auto lg:justify-end"
           >
             <button
               type="button"
-              aria-label="Aparência: tema escuro disponível em breve"
-              title="Tema escuro em breve"
-              onClick={() =>
-                showNotice("A configuração de tema estará disponível em breve.")
-              }
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+              aria-label={theme === "light" ? "Ativar tema escuro" : "Ativar tema claro"}
+              aria-pressed={theme === "dark"}
+              title={theme === "light" ? "Ativar tema escuro" : "Ativar tema claro"}
+              onClick={toggleTheme}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
             >
-              <Moon size={17} aria-hidden="true" />
+              {theme === "light" ? <Moon size={17} aria-hidden="true" /> : <Sun size={17} aria-hidden="true" />}
             </button>
-            <Link
-              href="/dashboard/whatsapp"
-              aria-label={`WhatsApp ${whatsappConnected ? "conectado" : "desconectado"}; abrir integração`}
+            <button
+              type="button"
+              onClick={whatsapp.openConnection}
+              aria-label={`WhatsApp ${whatsappLabel(whatsapp.state)}; abrir conexão`}
               title="Ver integração do WhatsApp"
-              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-700 shadow-sm transition hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-700 shadow-sm transition hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
             >
               <span
-                className={`h-2 w-2 rounded-full ${whatsappConnected ? "bg-emerald-500" : "bg-rose-500"}`}
+                className={`h-2 w-2 rounded-full ${whatsappConnected ? "bg-emerald-500" : whatsapp.state === "disconnected" ? "bg-rose-500" : "bg-amber-500"}`}
                 aria-hidden="true"
               />
-              <span>{whatsappConnected ? "Conectado" : "Desconectado"}</span>
-            </Link>
+              <span>{whatsappLabel(whatsapp.state)}</span>
+            </button>
             <Link
               href="/planos"
               className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-950 px-3 text-[11px] font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
@@ -390,7 +422,7 @@ export default function DashboardShell({
                 className="h-2 w-2 rounded-full bg-emerald-400"
                 aria-hidden="true"
               />
-              <span>{daysRemaining(profile.expiresAt)}</span>
+              <span>{daysRemaining(profile.expiresAt, profile.planStatus)}</span>
             </Link>
             <form action={logout} className="shrink-0">
               <button aria-label="Sair da conta" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-2 text-[11px] font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 sm:px-3">
@@ -406,14 +438,13 @@ export default function DashboardShell({
         </div>
       </div>
 
-      {notice && (
-        <div
-          role="status"
-          className="fixed bottom-5 right-5 z-50 max-w-sm rounded-xl bg-slate-950 px-4 py-3 text-xs font-semibold text-white shadow-xl"
-        >
-          {notice}
+      <dialog ref={connectionDialog} aria-label="Conexão do WhatsApp" onCancel={closeConnection} className="whatsapp-dialog rounded-2xl border border-slate-200 bg-white p-5 text-slate-950 shadow-xl sm:p-8">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-bold">Conexão do WhatsApp</h2>
+          <button type="button" onClick={closeConnection} aria-label="Fechar conexão" className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"><X size={20} aria-hidden="true" /></button>
         </div>
-      )}
+        {connectionOpen && <WhatsappConnection />}
+      </dialog>
     </div>
   );
 }
