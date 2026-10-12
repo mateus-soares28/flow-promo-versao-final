@@ -3,8 +3,8 @@
 ## 1. Banco Supabase
 
 1. Faça backup do projeto Supabase antes de migrar banco já usado.
-2. No SQL Editor, execute `supabase/migrations/0002_lock_profiles_and_seed_plans.sql` depois da migração `0001`.
-3. Migração 0002 remove atualização direta de perfis por usuários autenticados e cria os três IDs de plano usados pelo checkout.
+2. No SQL Editor, execute as migrações `0002_lock_profiles_and_seed_plans.sql`, `0003_workspace_templates.sql` e `0004_group_member_snapshots.sql` nesta ordem, depois da migração `0001`.
+3. Migração 0002 remove atualização direta de perfis por usuários autenticados e cria os três IDs de plano usados pelo checkout. Migração 0004 guarda contagens reais de membros a cada sincronização para calcular crescimento em 24 horas. O indicador fica indisponível até existir uma medição anterior a 24 horas e outra recente.
 4. Valores e limites comerciais em `plans` ficam como zero provisório; defina-os antes de implementar cobrança por limite. Preços exibidos no checkout vêm dos Price IDs Stripe.
 5. Confirme `Site URL` e `Redirect URLs` em Authentication → URL Configuration. Inclua domínio de produção e URLs de preview necessárias.
 6. Em Authentication → Providers → Email, mantenha confirmação de e-mail habilitada. Páginas e ações da plataforma bloqueiam usuários sem e-mail confirmado e plano ativo.

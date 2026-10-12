@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEvolutionText } from "@/lib/evolution/server";
 import { hasActivePlan } from "@/lib/access";
+import { PAUSED_GROUP_DISPATCH } from "@/lib/dispatch/constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,11 +38,16 @@ export async function GET(request: NextRequest) {
     try {
       const [{ data: profile }, { data: group }, { data: session }] = await Promise.all([
         admin.from("profiles").select("role,plan_status,expires_at").eq("id", dispatch.user_id).maybeSingle(),
-        admin.from("affiliate_groups").select("group_id").eq("id", dispatch.group_id).eq("user_id", dispatch.user_id).single(),
+        admin.from("affiliate_groups").select("group_id,is_active").eq("id", dispatch.group_id).eq("user_id", dispatch.user_id).single(),
         admin.from("whatsapp_sessions").select("session_name,status").eq("user_id", dispatch.user_id).eq("status", "connected").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
       if (!hasActivePlan(profile)) throw new Error("Inactive subscription.");
       if (!group || !session) throw new Error("Missing destination or connected WhatsApp session.");
+      if (!group.is_active) {
+        const { error: pauseError } = await admin.from("dispatches").update({ status: "pending", scheduled_for: new Date(Date.now() + 60 * 60 * 1000).toISOString(), error_message: PAUSED_GROUP_DISPATCH }).eq("id", dispatch.id);
+        if (pauseError) throw pauseError;
+        continue;
+      }
       await sendEvolutionText(session.session_name, group.group_id, dispatch.message_content);
       const { error: updateError } = await admin.from("dispatches").update({ status: "sent", sent_at: new Date().toISOString(), error_message: null }).eq("id", dispatch.id);
       if (updateError) throw updateError;

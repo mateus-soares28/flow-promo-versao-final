@@ -136,6 +136,15 @@ export async function syncWhatsappGroups() {
 
   try {
     const groups = await fetchEvolutionGroups(context.session.session_name);
+    const { data: profile } = await context.supabase.from("profiles").select("plan").eq("id", context.user.id).maybeSingle();
+    const { data: plan } = profile?.plan && profile.plan !== "none"
+      ? await context.supabase.from("plans").select("groups_limit").eq("id", profile.plan).maybeSingle()
+      : { data: null };
+    const { count, error: countError } = await context.supabase.from("affiliate_groups").select("id", { count: "exact", head: true }).eq("user_id", context.user.id);
+    if (countError) throw countError;
+    let currentCount = count ?? 0;
+    let syncedCount = 0;
+    let skippedCount = 0;
     for (const group of groups) {
       const { data: existing, error: lookupError } = await context.supabase
         .from("affiliate_groups")
@@ -145,12 +154,22 @@ export async function syncWhatsappGroups() {
         .limit(1)
         .maybeSingle();
       if (lookupError) throw lookupError;
+      if (!existing && plan?.groups_limit && plan.groups_limit > 0 && currentCount >= plan.groups_limit) {
+        skippedCount += 1;
+        continue;
+      }
       const result = existing
-        ? await context.supabase.from("affiliate_groups").update({ name: group.name, members_count: group.members, is_active: true }).eq("id", existing.id)
-        : await context.supabase.from("affiliate_groups").insert({ user_id: context.user.id, platform: "whatsapp", group_id: group.id, name: group.name, members_count: group.members });
+        ? await context.supabase.from("affiliate_groups").update({ ...(group.members !== null ? { members_count: group.members } : {}) }).eq("id", existing.id).eq("user_id", context.user.id).select("id").single()
+        : await context.supabase.from("affiliate_groups").insert({ user_id: context.user.id, platform: "whatsapp", group_id: group.id, name: group.name, ...(group.members !== null ? { members_count: group.members } : {}) }).select("id").single();
       if (result.error) throw result.error;
+      if (!existing) currentCount += 1;
+      syncedCount += 1;
+      if (group.members !== null) {
+        const { error: snapshotError } = await context.supabase.from("group_member_snapshots").insert({ user_id: context.user.id, group_id: result.data.id, members_count: group.members });
+        if (snapshotError) console.error("Could not record group member snapshot", { groupId: result.data.id, error: snapshotError.message });
+      }
     }
-    return { ok: true, count: groups.length };
+    return { ok: true, count: syncedCount, skipped: skippedCount };
   } catch {
     return { ok: false, error: "Não foi possível sincronizar grupos com a Evolution API." };
   }
@@ -159,5 +178,5 @@ export async function syncWhatsappGroups() {
 export async function syncWhatsappGroupsAction(_formData: FormData) {
   const result = await syncWhatsappGroups();
   if (!result.ok) redirect("/dashboard/grupos?error=sync");
-  redirect(`/dashboard/grupos?synced=${result.count}`);
+  redirect(`/dashboard/grupos?synced=${result.count}&skipped=${result.skipped}`);
 }

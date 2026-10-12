@@ -63,6 +63,8 @@ Referência: [repositório oficial da Evolution API](https://github.com/evolutio
 
 Antes de usar /dashboard/mensagens, execute supabase/migrations/0003_workspace_templates.sql no SQL Editor do Supabase. Essa migração cria a tabela de templates com acesso restrito ao dono da conta.
 
+Antes de usar o indicador de crescimento em `/dashboard/grupos`, execute `supabase/migrations/0004_group_member_snapshots.sql`. Depois, sincronize os grupos em dias diferentes. Até haver histórico suficiente, o indicador mostra “—”.
+
 ### Jornada de compra
 
 1. `/` apresenta a plataforma e leva à página `/planos`.

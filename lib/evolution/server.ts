@@ -6,7 +6,7 @@ export type WhatsappConnection = {
   phone: string | null;
 };
 
-export type EvolutionGroup = { id: string; name: string; members: number };
+export type EvolutionGroup = { id: string; name: string; members: number | null };
 
 function getConfig() {
   const baseUrl = process.env.EVOLUTION_API_URL?.trim().replace(/\/+$/, "");
@@ -91,7 +91,7 @@ export async function fetchEvolutionGroups(instanceName: string): Promise<Evolut
     return [{
       id,
       name: typeof group.subject === "string" && group.subject.trim() ? group.subject.trim() : id,
-      members: typeof group.size === "number" && Number.isFinite(group.size) ? group.size : 0,
+      members: typeof group.size === "number" && Number.isFinite(group.size) && group.size >= 0 ? group.size : null,
     }];
   });
 }

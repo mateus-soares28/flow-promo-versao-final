@@ -79,7 +79,7 @@ const sections = [
         icon: WalletCards,
       },
       { label: "Integrações", href: "/dashboard/integracoes", icon: Settings2 },
-      { label: "Plano", href: "/planos", icon: CreditCard },
+      { label: "Configurações", href: "/dashboard/configuracoes", icon: CreditCard },
     ],
   },
 ];

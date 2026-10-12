@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasActivePlan } from "@/lib/access";
 import { parseDispatchSchedule } from "@/lib/validation/dispatch";
+import { PAUSED_GROUP_DISPATCH } from "@/lib/dispatch/constants";
 
 async function getUserAndClient() {
   const supabase = await createClient();
@@ -101,11 +102,48 @@ export async function createGroup(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const groupId = String(formData.get("group_id") || "").trim();
   const segment = String(formData.get("segment") || "Geral").trim();
-  if (!name || name.length > 100 || !/^\d{5,30}@g\.us$/.test(groupId)) redirect("/dashboard/grupos?error=invalid");
+  if (!name || name.length > 100 || segment.length > 80 || !/^\d{5,30}@g\.us$/.test(groupId)) redirect("/dashboard/grupos?error=invalid");
 
+  const { data: existing, error: lookupError } = await supabase.from("affiliate_groups").select("id").eq("user_id", user.id).eq("group_id", groupId).maybeSingle();
+  if (lookupError) redirect("/dashboard/grupos?error=save");
+  if (existing) redirect("/dashboard/grupos?error=duplicate");
+  const { data: profile } = await supabase.from("profiles").select("plan").eq("id", user.id).maybeSingle();
+  if (profile?.plan && profile.plan !== "none") {
+    const { data: plan } = await supabase.from("plans").select("groups_limit").eq("id", profile.plan).maybeSingle();
+    if (plan?.groups_limit && plan.groups_limit > 0) {
+      const { count, error: countError } = await supabase.from("affiliate_groups").select("id", { count: "exact", head: true }).eq("user_id", user.id);
+      if (countError) redirect("/dashboard/grupos?error=save");
+      if ((count ?? 0) >= plan.groups_limit) redirect("/dashboard/grupos?error=limit");
+    }
+  }
   const { error } = await supabase.from("affiliate_groups").insert({ user_id: user.id, name, group_id: groupId, segment });
   if (error) redirect("/dashboard/grupos?error=save");
   redirect("/dashboard/grupos?created=1");
+}
+
+export async function updateGroup(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const id = Number(formData.get("id"));
+  const name = String(formData.get("name") || "").trim();
+  const segment = String(formData.get("segment") || "Geral").trim();
+  if (!Number.isSafeInteger(id) || id <= 0 || !name || name.length > 100 || segment.length > 80) redirect("/dashboard/grupos?error=invalid");
+  const { data, error } = await supabase.from("affiliate_groups").update({ name, segment: segment || "Geral" }).eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
+  if (error || !data) redirect("/dashboard/grupos?error=save");
+  redirect("/dashboard/grupos?updated=1");
+}
+
+export async function toggleGroup(formData: FormData) {
+  const { supabase, user } = await getUserAndClient();
+  const id = Number(formData.get("id"));
+  const active = formData.get("is_active") === "true";
+  if (!Number.isSafeInteger(id) || id <= 0) redirect("/dashboard/grupos?error=invalid");
+  const { data, error } = await supabase.from("affiliate_groups").update({ is_active: !active }).eq("id", id).eq("user_id", user.id).eq("is_active", active).select("id").maybeSingle();
+  if (error || !data) redirect("/dashboard/grupos?error=save");
+  if (active === false) {
+    const { error: queueError } = await supabase.from("dispatches").update({ scheduled_for: new Date().toISOString(), error_message: null }).eq("user_id", user.id).eq("group_id", id).eq("status", "pending").eq("error_message", PAUSED_GROUP_DISPATCH);
+    if (queueError) console.error("Could not resume paused dispatches", { groupId: id, error: queueError.message });
+  }
+  redirect("/dashboard/grupos?updated=1");
 }
 
 const validStores = new Set(["all", "shopee", "amazon", "magalu", "mercadolivre", "aliexpress"]);
