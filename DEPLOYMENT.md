@@ -9,6 +9,7 @@
 5. Confirme `Site URL` e `Redirect URLs` em Authentication → URL Configuration. Inclua domínio de produção e URLs de preview necessárias.
 6. Em Authentication → Providers → Email, mantenha confirmação de e-mail habilitada. Páginas e ações da plataforma bloqueiam usuários sem e-mail confirmado e plano ativo.
 7. Em Authentication → Emails → SMTP Settings, configure SMTP e permita `APP_URL/login?confirmed=1` como destino de confirmação. Para produção, prefira remetente em domínio próprio autenticado.
+8. Configure o modelo **Reset Password** para enviar `{{ .Token }}` como código de seis dígitos. Veja o passo a passo em [docs/password-recovery.md](docs/password-recovery.md); sem esse modelo, o formulário de recuperação não recebe o código esperado.
 
 ## 2. Vercel
 
@@ -50,6 +51,8 @@ IDs de preço exigidos:
 Cada preço deve ser recorrente, BRL e compatível com ciclo mensal/anual. O app lê valor e Price ID direto do Stripe.
 
 ## 4. Evolution API
+
+Para implantar a Evolution no VPS Hostinger e conectar pelo QR Code, siga [o guia passo a passo](docs/evolution-hostinger.md). O Compose de produção está em `compose.evolution.hostinger.yaml`.
 
 `EVOLUTION_INSTANCE_NAME` funciona como prefixo para nomes de instância por usuário; não é nome de uma única sessão compartilhada. Cada conta recebe uma instância própria, criada pela API com o UUID do usuário. Chave mestra da Evolution fica só no servidor.
 

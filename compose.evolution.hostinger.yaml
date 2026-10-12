@@ -1,0 +1,77 @@
+name: flowpromos-evolution
+
+services:
+  api:
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    environment:
+      SERVER_TYPE: http
+      SERVER_PORT: "8080"
+      SERVER_URL: https://${EVOLUTION_DOMAIN:?Set EVOLUTION_DOMAIN}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?Set EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "false"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_POSTGRES_PASSWORD:?Set EVOLUTION_POSTGRES_PASSWORD}@postgres:5432/evolution?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: flowpromos
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/0
+      CACHE_REDIS_PREFIX_KEY: flowpromos
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      TELEMETRY_ENABLED: "false"
+      LOG_LEVEL: ERROR,WARN,INFO,LOG
+      LOG_BAILEYS: error
+      LANGUAGE: pt-BR
+    volumes:
+      - instances:/evolution/instances
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.flowpromos-evolution.rule=Host(`${EVOLUTION_DOMAIN:?Set EVOLUTION_DOMAIN}`)
+      - traefik.http.routers.flowpromos-evolution.entrypoints=websecure
+      - traefik.http.routers.flowpromos-evolution.tls.certresolver=letsencrypt
+      - traefik.http.routers.flowpromos-evolution.service=flowpromos-evolution
+      - traefik.http.services.flowpromos-evolution.loadbalancer.server.port=8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${EVOLUTION_POSTGRES_PASSWORD:?Set EVOLUTION_POSTGRES_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  instances:
+  postgres:
+  redis:
+
